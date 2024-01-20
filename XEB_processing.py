@@ -23,7 +23,7 @@ class XEB_processing:
     get_prng_gate_sequence_list     : return prng gate_sequence_list for XEB
     check_gate_sequence_list        : plot frequency distribution histogram
     '''
-    def __init__(self, N, gates, n1Q=1, n2Q=1, nrepeat=0):
+    def __init__(self, N, gates, n1Q=1, n2Q=1, nrepeat=0, confusion_matrix=None):
         '''
         N           : number of qubits
         gates       : list of single-qubit gates
@@ -35,6 +35,11 @@ class XEB_processing:
         self.n1Q = n1Q
         self.n2Q = n2Q
         self.nrepeat = nrepeat
+        if confusion_matrix is not None:
+            self.confusion_matrix = confusion_matrix/np.sum(confusion_matrix[0])
+        else:
+            self.confusion_matrix = confusion_matrix
+            
 
 
 
@@ -71,13 +76,20 @@ class XEB_processing:
 
 
 
-    def get_fidelity(self, diag_el, diag_el_exp): 
-        assert len(diag_el_exp.shape) == 3
-        if len(diag_el.shape) == 3:
-            diag_el = diag_el[:,np.newaxis]
-        e_u = np.sum(diag_el_exp**2, axis = 2)[:,np.newaxis]
-        u_u = np.sum(diag_el_exp, axis = 2)[:,np.newaxis] / 2**self.N
-        m_u = np.sum(diag_el_exp[:,np.newaxis] * diag_el, axis = -1)
+    def get_fidelity(self, diag_el_exp, diag_el): 
+        # diag_el_exp - experimental data
+        # diag_el - simualated data
+        assert len(diag_el.shape) == 3
+        if len(diag_el_exp.shape) == 3:
+            diag_el_exp = diag_el_exp[:,np.newaxis]
+
+        if self.confusion_matrix is not None:
+            diag_el = (self.confusion_matrix.T)[np.newaxis, np.newaxis]@diag_el[...,np.newaxis]
+            diag_el = diag_el[...,0]
+            
+        e_u = np.sum(diag_el**2, axis = 2)[:,np.newaxis]
+        u_u = np.sum(diag_el, axis = 2)[:,np.newaxis] / 2**self.N
+        m_u = np.sum(diag_el[:,np.newaxis] * diag_el_exp, axis = -1)
         
         depol_fidelity_lsq = (np.sum((m_u-u_u)*(e_u-u_u),axis=-1) / np.sum((e_u-u_u)**2, axis=-1)).T
         # fidelity = depol_fidelity_lsq + (1-depol_fidelity_lsq)/diag_el.shape[-1]#2**self.N
