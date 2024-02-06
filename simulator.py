@@ -73,6 +73,17 @@ class QuantumComputer_psi:
                     for _ in range(n2Q):
                         G = self.generate_G([*Gparams])
                         psi = G@psi
+            elif gate_sequence_ind.shape[1] == 1:
+                psi = np.array([[1], [0]], dtype=self.dtype)
+                psi = psi[np.newaxis]
+                for i in range(nrepeat):
+                    psi = ((self.gates[0][gate_sequence_ind[:, 0, i]])[np.newaxis] @ psi)
+                for i in range((gate_sequence_ind.shape[2] - nrepeat) // n1Q):
+                    for i1Q in range(n1Q):
+                        psi = ((self.gates[0][gate_sequence_ind[:, 0, nrepeat + i * n1Q + i1Q]])[np.newaxis] @ psi)
+                    for _ in range(n2Q):
+                        G = self.generate_G([*Gparams])
+                        psi = G@psi
             else:
                 print('wrong gate_sequence_ind.shape for Gconst_flag==False')
 
